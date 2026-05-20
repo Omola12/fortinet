@@ -89,29 +89,9 @@
 
 <script>
 // ⚠️ IMPORTANT: Replace with YOUR actual Web App URL
-const API_URL = "https://script.google.com/macros/s/AKfycbxOWroMqaKsnNjEb2hiv1bAcE0N20o6Bsju_dB9B2nZNWVHkGRFPp76Q_Q1Or4Z0Vc8/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyGGso7AUimPYB_DC1rhpqeAySefkPGcI4qxBQVhJk0CVD7IkQEdY8Z5M9rhWgVi-JJ/exec";
 
-// Submit complaint function
-async function submitComplaint(complaintData) {
-    try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            mode: "cors",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(complaintData)
-        });
-        
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("Submit error:", error);
-        return { error: error.message };
-    }
-}
-
-// Handle form submission
+// Submit complaint using form submit (works around CORS)
 document.getElementById("complaintForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     
@@ -122,49 +102,83 @@ document.getElementById("complaintForm").addEventListener("submit", async (e) =>
     const category = document.getElementById("category").value;
     const message = document.getElementById("messageText").value.trim();
     
-    // Validate
     if (!name || !email || !subject || !message) {
         showMessage("Please fill in all required fields", "error");
         return;
     }
     
-    // Disable button and show loading
+    // Disable button
     const submitBtn = document.getElementById("submitBtn");
     submitBtn.disabled = true;
     submitBtn.textContent = "Submitting...";
     showMessage("Submitting your complaint...", "loading");
     
-    // Prepare payload
-    const payload = {
-        action: "submit",
-        name: name,
-        email: email,
-        subject: subject,
-        category: category,
-        message: message
-    };
-    
-    // Submit
-    const result = await submitComplaint(payload);
-    
-    // Re-enable button
-    submitBtn.disabled = false;
-    submitBtn.textContent = "📤 Submit to Fortinet";
-    
-    // Handle response
-    if (result.id) {
-        showMessage(`
-            ✅ <strong>Complaint submitted successfully!</strong><br>
-            <strong>Your Complaint ID:</strong> ${result.id}<br>
-            Please save this ID to track your complaint status.
-        `, "success");
-        document.getElementById("complaintForm").reset();
-    } else {
-        showMessage(`❌ Error: ${result.error || "Failed to submit. Please try again."}`, "error");
+    try {
+        // Create a hidden form and submit it (bypasses CORS)
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = API_URL;
+        form.target = 'hiddenFrame';
+        
+        const addField = (name, value) => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+        };
+        
+        addField('action', 'submit');
+        addField('name', name);
+        addField('email', email);
+        addField('subject', subject);
+        addField('category', category);
+        addField('message', message);
+        
+        // Create hidden iframe
+        let iframe = document.getElementById('hiddenFrame');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'hiddenFrame';
+            iframe.name = 'hiddenFrame';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+        
+        // Handle response
+        iframe.onload = function() {
+            try {
+                const response = iframe.contentWindow.document.body.innerText;
+                const data = JSON.parse(response);
+                if (data.id) {
+                    showMessage(`
+                        ✅ <strong>Complaint submitted successfully!</strong><br>
+                        <strong>Your Complaint ID:</strong> ${data.id}<br>
+                        Please save this ID to track your complaint status.
+                    `, "success");
+                    document.getElementById("complaintForm").reset();
+                } else {
+                    showMessage(`❌ Error: ${data.error || "Failed to submit"}`, "error");
+                }
+            } catch (err) {
+                showMessage("❌ Error submitting complaint. Please try again.", "error");
+            }
+            submitBtn.disabled = false;
+            submitBtn.textContent = "📤 Submit to Fortinet";
+        };
+        
+        document.body.appendChild(form);
+        form.submit();
+        form.remove();
+        
+    } catch (error) {
+        showMessage("❌ Error submitting complaint. Please try again.", "error");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "📤 Submit to Fortinet";
     }
 });
 
-// Track complaint function
+// Track complaint
 async function trackComplaint() {
     const id = document.getElementById("trackingId").value.trim();
     
@@ -202,7 +216,6 @@ async function trackComplaint() {
     }
 }
 
-// Helper function to show messages
 function showMessage(msg, type) {
     const messageDiv = document.getElementById("message");
     messageDiv.innerHTML = `<div class="${type}">${msg}</div>`;
