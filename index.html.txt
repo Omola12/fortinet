@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fortinet Support - Submit Complaint</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial; background: linear-gradient(135deg, #0a5c4a 0%, #1a3a2e 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 600px; margin: auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header h1 span { color: #ffd700; }
+        .header p { font-size: 16px; opacity: 0.9; }
+        .form-card { background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #333; }
+        input, select, textarea { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; transition: 0.2s; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #0a5c4a; }
+        textarea { resize: vertical; min-height: 120px; }
+        button { background: linear-gradient(135deg, #0a5c4a 0%, #1a3a2e 100%); color: white; padding: 14px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; transition: transform 0.2s; }
+        button:hover { transform: translateY(-2px); }
+        .track-section { margin-top: 30px; padding-top: 30px; border-top: 2px solid #eee; }
+        .track-input { display: flex; gap: 10px; margin-top: 15px; }
+        .track-input input { flex: 1; }
+        .track-input button { width: auto; padding: 12px 20px; }
+        .complaint-status { background: #f8f9fa; border-radius: 10px; padding: 15px; margin-top: 15px; }
+        .reply-box { background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 10px; }
+        .success { background: #d4edda; color: #155724; padding: 12px; border-radius: 8px; margin-bottom: 20px; }
+        .error { background: #f8d7da; color: #721c24; padding: 12px; border-radius: 8px; margin-bottom: 20px; }
+        .fortinet-logo { text-align: center; margin-bottom: 20px; }
+        .fortinet-logo .logo { font-size: 48px; background: #0a5c4a; color: white; width: 80px; height: 80px; line-height: 80px; border-radius: 50%; margin: 0 auto; display: inline-block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="fortinet-logo">
+                <div class="logo">F</div>
+            </div>
+            <h1><span>FORTINET</span> Support</h1>
+            <p>Customer Complaint & Support Portal</p>
+        </div>
+
+        <div class="form-card">
+            <div id="message"></div>
+            
+            <form id="complaintForm">
+                <div class="input-group">
+                    <label>Your Full Name *</label>
+                    <input type="text" id="customerName" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Email Address *</label>
+                    <input type="email" id="customerEmail" placeholder="you@example.com" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Subject *</label>
+                    <input type="text" id="subject" placeholder="Brief summary of your issue" required>
+                </div>
+                
+                <div class="input-group">
+                    <label>Category *</label>
+                    <select id="category">
+                        <option value="Technical Issue">Technical Issue</option>
+                        <option value="Billing Problem">Billing Problem</option>
+                        <option value="Feature Request">Feature Request</option>
+                        <option value="Account Issue">Account Issue</option>
+                        <option value="Product Inquiry">Product Inquiry</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Complaint Details *</label>
+                    <textarea id="message" placeholder="Please describe your issue in detail..." required></textarea>
+                </div>
+                
+                <button type="submit">📤 Submit to Fortinet</button>
+            </form>
+            
+            <div class="track-section">
+                <h3>🔍 Track Your Complaint</h3>
+                <p style="color: #666; font-size: 14px;">Enter your Complaint ID to check status and reply from Fortinet support.</p>
+                <div class="track-input">
+                    <input type="text" id="trackingId" placeholder="Enter your Complaint ID (e.g., CMP-123456-ABC789)">
+                    <button onclick="trackComplaint()">Track</button>
+                </div>
+                <div id="trackResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function getComplaints() {
+            return JSON.parse(localStorage.getItem('fortinet_complaints')) || [];
+        }
+
+        function saveComplaints(complaints) {
+            localStorage.setItem('fortinet_complaints', JSON.stringify(complaints));
+        }
+
+        function generateId() {
+            return 'FTNT-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        }
+
+        document.getElementById('complaintForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('customerName').value;
+            const email = document.getElementById('customerEmail').value;
+            const subject = document.getElementById('subject').value;
+            const category = document.getElementById('category').value;
+            const message = document.getElementById('message').value;
+            
+            const complaintId = generateId();
+            
+            const complaint = {
+                id: complaintId,
+                name: name,
+                email: email,
+                subject: subject,
+                category: category,
+                message: message,
+                status: 'Pending',
+                reply: null,
+                replyDate: null,
+                date: new Date().toLocaleString(),
+                company: 'Fortinet'
+            };
+            
+            const complaints = getComplaints();
+            complaints.push(complaint);
+            saveComplaints(complaints);
+            
+            document.getElementById('message').innerHTML = `
+                <div class="success">
+                    ✅ Complaint submitted to Fortinet successfully!<br>
+                    <strong>Your Complaint ID: ${complaintId}</strong><br>
+                    Please save this ID to track your complaint status.<br>
+                    <small>Fortinet support will respond within 24 hours.</small>
+                </div>
+            `;
+            
+            document.getElementById('complaintForm').reset();
+            
+            setTimeout(() => {
+                document.getElementById('message').innerHTML = '';
+            }, 10000);
+        });
+        
+        function trackComplaint() {
+            const trackingId = document.getElementById('trackingId').value.trim();
+            if (!trackingId) {
+                alert('Please enter your Complaint ID');
+                return;
+            }
+            
+            const complaints = getComplaints();
+            const complaint = complaints.find(c => c.id === trackingId);
+            
+            const trackResult = document.getElementById('trackResult');
+            
+            if (!complaint) {
+                trackResult.innerHTML = `<div class="error">❌ Complaint not found. Please check your Complaint ID and try again.</div>`;
+                return;
+            }
+            
+            let replyHtml = '';
+            if (complaint.reply) {
+                replyHtml = `
+                    <div class="reply-box">
+                        <strong>📝 Fortinet Support Response:</strong><br>
+                        ${complaint.reply}<br>
+                        <small>Response sent on: ${complaint.replyDate}</small>
+                    </div>
+                `;
+            }
+            
+            trackResult.innerHTML = `
+                <div class="complaint-status">
+                    <strong>🏢 Company:</strong> Fortinet<br>
+                    <strong>🎫 Complaint ID:</strong> ${complaint.id}<br>
+                    <strong>📅 Date Submitted:</strong> ${complaint.date}<br>
+                    <strong>📌 Subject:</strong> ${complaint.subject}<br>
+                    <strong>📂 Category:</strong> ${complaint.category}<br>
+                    <strong>📝 Your Message:</strong> ${complaint.message}<br>
+                    <strong>⚡ Status:</strong> <span style="color: ${complaint.status === 'Resolved' ? 'green' : 'orange'}">${complaint.status}</span>
+                    ${replyHtml}
+                    <br><small>Thank you for choosing Fortinet.</small>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
